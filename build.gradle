@@ -1,5 +1,6 @@
 buildscript {
-    
+    ext.kotlin_version = '1.4.31'
+
 
     repositories {
         mavenLocal()
@@ -10,10 +11,12 @@ buildscript {
         google()
     }
     dependencies {
-        
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+
 
     }
 }
+apply plugin: 'kotlin'
 
 allprojects {
     apply plugin: "eclipse"
@@ -73,6 +76,23 @@ project(":core") {
         api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
         api "com.kotcrab.vis:vis-ui:1.4.8"
         implementation 'com.google.code.gson:gson:2.8.6'
+        api 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2'
         api group: 'com.google.collections', name: 'google-collections', version: '1.0-rc2'
+    }
+}
+repositories {
+    mavenCentral()
+}
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+}
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
     }
 }
