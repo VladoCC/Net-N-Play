@@ -27,7 +27,7 @@ class NetworkProcessor(val host: String, val port: Int) : IProcessor<SocketChann
     private val networkListener = NetworkListener()
     override lateinit var router: ICommandRouter<SocketChannel>
 
-    private val commandQueue: MutableMap<SocketChannel, MutableList<AbstractResponseCommand>> = HashMap()
+    private val commandQueue: MutableMap<SocketChannel, MutableList<AbstractResponseCommand<*>>> = HashMap()
 
     override var state = State.NOT_STARTED
         private set
@@ -108,11 +108,11 @@ class NetworkProcessor(val host: String, val port: Int) : IProcessor<SocketChann
         return networkListener.listen(channel)
     }
 
-    override fun sendMessage(command: AbstractResponseCommand, channel: SocketChannel) {
+    override fun sendMessage(command: AbstractResponseCommand<*>, channel: SocketChannel) {
         if (commandQueue.containsKey(channel)) {
             commandQueue[channel]!!.add(command)
         } else {
-            val commands: MutableList<AbstractResponseCommand> = ArrayList()
+            val commands: MutableList<AbstractResponseCommand<*>> = ArrayList()
             commands.add(command)
             commandQueue[channel] = commands
         }
@@ -126,7 +126,7 @@ class NetworkProcessor(val host: String, val port: Int) : IProcessor<SocketChann
         for ((key, value) in commandQueue) {
             if (key!!.isConnected) {
                 val message = StringBuilder()
-                for (command in value!!) {
+                for (command in value) {
                     message.append(serializer.serialize(command))
                 }
                 try {

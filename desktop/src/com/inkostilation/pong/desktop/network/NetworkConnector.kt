@@ -17,7 +17,7 @@ import java.util.*
 import kotlin.jvm.Throws
 import kotlinx.coroutines.*
 
-class NetworkConnector<I>(private val host: String, private val port: Int): IConnector<I> {
+class NetworkConnector<I>(private val receiver: I, private val host: String, private val port: Int): IConnector<I> {
     private lateinit var channel: SocketChannel
     private val serializer = Serializer()
     private val commandQueue = Collections.synchronizedList(ArrayList<AbstractRequestCommand<*, *>>())
@@ -29,68 +29,54 @@ class NetworkConnector<I>(private val host: String, private val port: Int): ICon
     override var state: IStateFul.State = IStateFul.State.NOT_STARTED
         private set
 
-    fun act() {
-        try {
-            if (state == IStateFul.State.STARTED) {
-                communicate()
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        } catch (e: NoEngineException) {
-            e.printStackTrace()
-        }
-    }
-
-    @Throws(IOException::class)
     override fun start() {
-        channel = SocketChannel.open(InetSocketAddress(host, port))
-        state = IStateFul.State.STARTED
+        try {
+            channel = SocketChannel.open(InetSocketAddress(host, port))
+            state = IStateFul.State.STARTED
 
-        sendJob = GlobalScope.launch {
-            while (true) {
-                if (commandQueue.size > 0) {
-                    withContext(Dispatchers.IO) {
-                        sendQueuedCommmands()
+            sendJob = GlobalScope.launch {
+                while (true) {
+                    if (commandQueue.size > 0) {
+                        withContext(Dispatchers.IO) {
+                            sendQueuedCommmands()
+                        }
+                        commandQueue.clear()
                     }
-                    commandQueue.clear()
                 }
             }
-        }
-        receiveJob = GlobalScope.launch {
-            while (true) {
-                val commands = withContext(Dispatchers.IO) {
-                    receive()
-                }
-                for (command in commands) {
-                    receiveCommand(command, null)
+
+            receiveJob = GlobalScope.launch {
+                while (true) {
+                    withContext(Dispatchers.IO) {
+                        receive()
+                    }.forEach {
+                        it.execute(receiver)
+                    }
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            state = IStateFul.State.ERROR
         }
-    }
-
-
-    @Throws(IOException::class, NoEngineException::class)
-    private fun communicate() {
-
-
     }
 
     @Throws(IOException::class)
     override fun receive(): List<AbstractResponseCommand<I>> {
-        val objects = networkListener.listen(channel!!)
-        return objects.map { o ->
-                    val command = serializer.deserialize(o) as AbstractResponseCommand<I>
-                    command.notifier = ClientNotifier.Companion.getInstance()
-                    command
-                }
+        return (serializer.deserialize(networkListener.listen(channel)) as List<AbstractResponseCommand<I>>)
     }
 
     @Throws(IOException::class)
     override fun stop() {
+        commandQueue.clear()
         commandQueue.add(QuitCommand())
         sendQueuedCommmands()
+
         sendJob.cancel()
+        receiveJob.cancel()
+
         channel.close()
+
+        state = IStateFul.State.STOPPED
     }
 
     override fun send(command: AbstractRequestCommand<IEngine<*>, *>) {
@@ -100,11 +86,10 @@ class NetworkConnector<I>(private val host: String, private val port: Int): ICon
     @Throws(IOException::class)
     private fun sendQueuedCommmands() {
         val msg = StringBuilder()
-        var commands = arrayOfNulls<AbstractRequestCommand<*, *>?>(commandQueue.size)
-        commands = commandQueue.toArray(commands)
+        val commands= commandQueue.toTypedArray()
         for (command in commands) {
             msg.append(serializer.serialize(command))
         }
-        channel!!.write(ByteBuffer.wrap(msg.toString().toByteArray()))
+        channel.write(ByteBuffer.wrap(msg.toString().toByteArray()))
     }
 }
