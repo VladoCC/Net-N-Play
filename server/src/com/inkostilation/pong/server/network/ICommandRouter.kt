@@ -1,14 +1,11 @@
 package com.inkostilation.pong.server.network
 
 import com.inkostilation.pong.commands.AbstractRequestCommand
+import com.inkostilation.pong.commands.AbstractResponseCommand
 import com.inkostilation.pong.engine.IEngine
-import com.inkostilation.pong.exceptions.NoEngineException
-import java.io.IOException
-import kotlin.jvm.Throws
 
 interface ICommandRouter<M> {
-    @Throws(IOException::class, NoEngineException::class)
-    fun route(command: AbstractRequestCommand<IEngine<M>, M>, processor: IProcessor<M>)
-
-    fun setEngines(engines: List<IEngine<M>>)
+    fun processCommand(command: AbstractRequestCommand<IEngine<M>, M>, marker: M): List<AbstractResponseCommand<*>>
+    fun start(engines: List<IEngine<M>>)
+    fun reroute(marker: M, engine: Class<out IEngine<M>>): Boolean
 }

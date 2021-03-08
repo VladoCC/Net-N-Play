@@ -31,7 +31,7 @@ class MessageParser {
             }
             val parcel = builder.toString()
             return objects.stream()
-                    .map<String> { p: Position -> String(parcel.substring(p.start, p.end)) }
+                    .map<String> { p: Position -> return@map parcel.substring(p.start, p.end) }
                     .collect(Collectors.toList())
         }
 

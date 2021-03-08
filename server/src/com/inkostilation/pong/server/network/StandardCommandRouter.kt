@@ -1,41 +1,46 @@
 package com.inkostilation.pong.server.network
 
 import com.inkostilation.pong.commands.AbstractRequestCommand
+import com.inkostilation.pong.commands.AbstractResponseCommand
 import com.inkostilation.pong.commands.response.ResponseErrorCommand
 import com.inkostilation.pong.engine.IEngine
-import com.inkostilation.pong.exceptions.MarkerIsNotSet
 import com.inkostilation.pong.exceptions.NoEngineException
 import java.io.IOException
+import java.nio.channels.SocketChannel
 import kotlin.jvm.Throws
-import kotlin.reflect.KClass
 
-class StandardCommandRouter<M>(engines: List<IEngine<M>> = ArrayList()) : ICommandRouter<M> {
-    private lateinit var engines: Map<KClass<out IEngine<M>>, IEngine<M>>
+class StandardCommandRouter(engines: List<IEngine<SocketChannel>> = ArrayList()) : AbstractCommandRouter<SocketChannel>() {
+    private lateinit var engines: Map<Class<out IEngine<SocketChannel>>, IEngine<SocketChannel>>
 
     init {
-        setEngines(engines)
+        start(engines)
     }
 
-    override fun setEngines(engines: List<IEngine<M>>) {
-        this.engines = engines.map {e: IEngine<M> -> e::class to e}
+    override fun start(engines: List<IEngine<SocketChannel>>) {
+        this.engines = engines.map {
+                    e -> e::class.java to e
+                }
                 .toMap()
     }
 
     @Throws(IOException::class, NoEngineException::class)
-    override fun route(command: AbstractRequestCommand<IEngine<M>, M>, processor: IProcessor<M>) {
-        val type = command.engineType as KClass<out IEngine<M>>
+    override fun route(command: AbstractRequestCommand<IEngine<SocketChannel>, SocketChannel>): List<AbstractResponseCommand<*>> {
+        val type = command.getEngineType() as Class<out IEngine<SocketChannel>>
         if (engines.containsKey(type)) {
             val engine = engines[type]
-            val response = command.execute(engine!!)
-                    .filterNotNull()
-            for (abstractResponseCommand in response) {
-                processor.sendMessage(
-                        abstractResponseCommand,
-                        command.marker?: throw MarkerIsNotSet()
-                )
-            }
+            return command.execute(engine!!)
+                    .toList()
         } else {
-            processor.sendMessage(ResponseErrorCommand("No engine with class $type found on the server"), command.marker?: throw MarkerIsNotSet())
+            return listOf(ResponseErrorCommand("No engine with class $type found on the server"))
+        }
+    }
+
+    override fun onQuitCommand(marker: SocketChannel) {
+        try {
+            // todo engine.quit(marker!!)
+            marker.close()
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
 }

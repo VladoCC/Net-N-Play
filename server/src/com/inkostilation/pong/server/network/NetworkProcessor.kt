@@ -3,10 +3,9 @@ package com.inkostilation.pong.server.network
 import com.inkostilation.pong.commands.AbstractRequestCommand
 import com.inkostilation.pong.commands.AbstractResponseCommand
 import com.inkostilation.pong.engine.IEngine
-import com.inkostilation.pong.processing.IStateFul
 import com.inkostilation.pong.processing.NetworkListener
-import com.inkostilation.pong.processing.Serializer
 import com.inkostilation.pong.processing.IStateFul.State
+import com.inkostilation.pong.processing.Serializer
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
@@ -16,18 +15,14 @@ import java.nio.channels.ServerSocketChannel
 import java.nio.channels.SocketChannel
 import java.util.*
 import kotlin.jvm.Throws
-import kotlin.reflect.KClass
 
-class NetworkProcessor(val host: String, val port: Int) : IProcessor<SocketChannel> {
+class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor<SocketChannel>() {
 
     private var selector = Selector.open()
     private val serverSocket= ServerSocketChannel.open()
 
     private val serializer = Serializer()
     private val networkListener = NetworkListener()
-    override lateinit var router: ICommandRouter<SocketChannel>
-
-    private val commandQueue: MutableMap<SocketChannel, MutableList<AbstractResponseCommand<*>>> = HashMap()
 
     override var state = State.NOT_STARTED
         private set
@@ -48,29 +43,19 @@ class NetworkProcessor(val host: String, val port: Int) : IProcessor<SocketChann
         state = State.STOPPED
     }
 
-    override fun processConnections() {
+    override fun process(): List<SocketChannel> {
         if (state == State.STARTED) {
             try {
                 selector!!.select(10)
                 val selectedKeys = selector!!.selectedKeys()
-                val iter = selectedKeys.iterator()
-                while (iter.hasNext()) {
-                    val key = iter.next()
-                    if (key.isAcceptable) {
-                        register()
-                    }
-                    if (key.isReadable) {
-                        receiveMessage(key)
-                    }
-                    iter.remove()
-                }
-                if (commandQueue.size > 0) {
-                    sendAll()
-                }
+                selectedKeys.filter { it.isAcceptable }
+                        .forEach { register() }
+                return selectedKeys.filter { it.isReadable }.map { it.channel() as SocketChannel }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
+        return emptyList()
     }
 
     @Throws(IOException::class)
@@ -81,26 +66,13 @@ class NetworkProcessor(val host: String, val port: Int) : IProcessor<SocketChann
     }
 
     @Throws(IOException::class)
-    private fun receiveMessage(key: SelectionKey) {
-        val objects = parseObjects(key.channel() as SocketChannel)
-        val set: MutableSet<KClass<*>> = HashSet()
-        val commands: List<AbstractRequestCommand<IEngine<SocketChannel>, SocketChannel>>
-                = objects.map { o: String ->
-                    val command = serializer.deserialize(o) as AbstractRequestCommand<IEngine<SocketChannel>, SocketChannel>
-                            ?: return@map null
-                    command.marker = key.channel() as SocketChannel
-                    command
-                }
-                .filterNotNull()
+    override fun receive(marker: SocketChannel): List<AbstractRequestCommand<IEngine<SocketChannel>, SocketChannel>> {
+        val set: MutableSet<Class<*>> = HashSet()
+        return (serializer.deserialize(parseObjects(marker))
+                as List<AbstractRequestCommand<IEngine<SocketChannel>, SocketChannel>>)
                 .filter { c ->
-                    set.add(c::class) }
-        for (command in commands) {
-            try {
-                router.route(command, this)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+                    set.add(c::class.java)
+                }
     }
 
     @Throws(IOException::class)
@@ -108,34 +80,14 @@ class NetworkProcessor(val host: String, val port: Int) : IProcessor<SocketChann
         return networkListener.listen(channel)
     }
 
-    override fun sendMessage(command: AbstractResponseCommand<*>, channel: SocketChannel) {
-        if (commandQueue.containsKey(channel)) {
-            commandQueue[channel]!!.add(command)
-        } else {
-            val commands: MutableList<AbstractResponseCommand<*>> = ArrayList()
-            commands.add(command)
-            commandQueue[channel] = commands
-        }
-    }
-
-    fun hasQueuedMessages(channel: SocketChannel?): Boolean {
-        return commandQueue.containsKey(channel) && commandQueue[channel]!!.size > 0
-    }
-
-    private fun sendAll() {
-        for ((key, value) in commandQueue) {
-            if (key!!.isConnected) {
-                val message = StringBuilder()
-                for (command in value) {
-                    message.append(serializer.serialize(command))
-                }
-                try {
-                    key.write(ByteBuffer.wrap(message.toString().toByteArray()))
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
+    override fun send(commands: List<AbstractResponseCommand<*>>, channel: SocketChannel) {
+        if (channel.isConnected) {
+            try {
+                val data = ByteBuffer.wrap(serializer.serialize(commands).toByteArray())
+                channel.write(data)
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
         }
-        commandQueue.clear()
     }
 }

@@ -3,9 +3,8 @@ package com.inkostilation.pong.desktop.network
 import com.inkostilation.pong.commands.AbstractRequestCommand
 import com.inkostilation.pong.commands.AbstractResponseCommand
 import com.inkostilation.pong.commands.QuitCommand
-import com.inkostilation.pong.desktop.notification.ClientNotifier
 import com.inkostilation.pong.engine.IEngine
-import com.inkostilation.pong.exceptions.NoEngineException
+import com.inkostilation.pong.engine.NullEngine
 import com.inkostilation.pong.processing.IStateFul
 import com.inkostilation.pong.processing.NetworkListener
 import com.inkostilation.pong.processing.Serializer
@@ -16,6 +15,7 @@ import java.nio.channels.SocketChannel
 import java.util.*
 import kotlin.jvm.Throws
 import kotlinx.coroutines.*
+import kotlin.reflect.KClass
 
 class NetworkConnector<I>(private val receiver: I, private val host: String, private val port: Int): IConnector<I> {
     private lateinit var channel: SocketChannel
@@ -23,8 +23,8 @@ class NetworkConnector<I>(private val receiver: I, private val host: String, pri
     private val commandQueue = Collections.synchronizedList(ArrayList<AbstractRequestCommand<*, *>>())
     private val networkListener = NetworkListener()
 
-    private lateinit var sendJob: Job
-    private lateinit var receiveJob: Job
+    private lateinit var senderThread: SenderThread
+    private lateinit var receiverThread: ReceiverThread
 
     override var state: IStateFul.State = IStateFul.State.NOT_STARTED
         private set
@@ -34,26 +34,11 @@ class NetworkConnector<I>(private val receiver: I, private val host: String, pri
             channel = SocketChannel.open(InetSocketAddress(host, port))
             state = IStateFul.State.STARTED
 
-            sendJob = GlobalScope.launch {
-                while (true) {
-                    if (commandQueue.size > 0) {
-                        withContext(Dispatchers.IO) {
-                            sendQueuedCommmands()
-                        }
-                        commandQueue.clear()
-                    }
-                }
-            }
+            senderThread = SenderThread()
+            senderThread.start()
 
-            receiveJob = GlobalScope.launch {
-                while (true) {
-                    withContext(Dispatchers.IO) {
-                        receive()
-                    }.forEach {
-                        it.execute(receiver)
-                    }
-                }
-            }
+            receiverThread = ReceiverThread()
+            receiverThread.start()
         } catch (e: Exception) {
             e.printStackTrace()
             state = IStateFul.State.ERROR
@@ -71,9 +56,10 @@ class NetworkConnector<I>(private val receiver: I, private val host: String, pri
         commandQueue.add(QuitCommand())
         sendQueuedCommmands()
 
-        sendJob.cancel()
-        receiveJob.cancel()
+        senderThread.finish()
+        receiverThread.finish()
 
+        while (!senderThread.finished || !receiverThread.finished)
         channel.close()
 
         state = IStateFul.State.STOPPED
@@ -85,11 +71,54 @@ class NetworkConnector<I>(private val receiver: I, private val host: String, pri
 
     @Throws(IOException::class)
     private fun sendQueuedCommmands() {
-        val msg = StringBuilder()
-        val commands= commandQueue.toTypedArray()
-        for (command in commands) {
-            msg.append(serializer.serialize(command))
+        // todo check for concurent modifications
+        //val commands= commandQueue.toTypedArray()
+        val commands = commandQueue as List<AbstractRequestCommand<*, *>>
+        channel.write(ByteBuffer.wrap(serializer.serialize(commands).toByteArray()))
+    }
+
+    private inner class SenderThread: Thread() {
+        var work = true
+            private set
+        var finished = false
+            private set
+
+        override fun run() {
+            while (work) {
+                if (commandQueue.size > 0) {
+                    sendQueuedCommmands()
+
+                    commandQueue.clear()
+                }
+            }
+
+            finished = true
         }
-        channel.write(ByteBuffer.wrap(msg.toString().toByteArray()))
+
+        fun finish() {
+            work = false
+        }
+    }
+
+    private inner class ReceiverThread: Thread() {
+        var work = true
+            private set
+        var finished = false
+            private set
+
+        init {
+            priority = 1
+        }
+
+        override fun run() {
+            while (work) {
+                receive().forEach { it.execute(receiver) }
+            }
+            finished = true
+        }
+
+        fun finish() {
+            work = false
+        }
     }
 }

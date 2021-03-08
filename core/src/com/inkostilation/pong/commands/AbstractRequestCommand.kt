@@ -5,9 +5,6 @@ import java.io.IOException
 import kotlin.jvm.Throws
 import kotlin.reflect.KClass
 
-abstract class AbstractRequestCommand<E : IEngine<M>?, M>: ICommand<E, Array<AbstractResponseCommand>> {
-
-    var marker: M? = null
-    val engineType: KClass<IEngine<*>>
-        get() = IEngine::class
+abstract class AbstractRequestCommand<E : IEngine<M>, M>: ICommand<E, Array<AbstractResponseCommand<*>>> {
+    abstract fun getEngineType(): Class<out IEngine<*>>
 }

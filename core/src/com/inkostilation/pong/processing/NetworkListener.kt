@@ -3,6 +3,7 @@ package com.inkostilation.pong.processing
 import com.inkostilation.pong.exceptions.EmptyParcelException
 import com.inkostilation.pong.exceptions.ParsingNotFinishedException
 import java.io.IOException
+import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.nio.channels.SocketChannel
 import java.util.*
@@ -30,7 +31,7 @@ class NetworkListener(bufferSize: Int = 1024) {
                 e.printStackTrace()
                 break
             }
-            buffer.clear()
+            (buffer as Buffer).clear()
             if (parser.isEmpty || parser.hasObjects()) {
                 try {
                     objects = parser.andClearObjects
