@@ -1,9 +1,6 @@
 package com.inkostilation.pong.commands
 
-import com.inkostilation.pong.engine.IEngine
-import java.io.IOException
-import java.nio.channels.SocketChannel
-import kotlin.reflect.KClass
+import com.inkostilation.pong.server.engine.IEngine
 
 class QuitCommand() : AbstractRequestCommand<IEngine<Any>, Any>() {
     override fun execute(engine: IEngine<Any>): Array<AbstractResponseCommand<*>> {

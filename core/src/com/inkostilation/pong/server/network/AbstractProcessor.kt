@@ -2,15 +2,14 @@ package com.inkostilation.pong.server.network
 
 import com.inkostilation.pong.commands.AbstractRequestCommand
 import com.inkostilation.pong.commands.AbstractResponseCommand
-import com.inkostilation.pong.engine.IEngine
-import com.inkostilation.pong.engine.NullEngine
-import com.inkostilation.pong.processing.IStateFul
+import com.inkostilation.pong.server.engine.IEngine
+import com.inkostilation.pong.server.engine.NullEngine
 
 abstract class AbstractProcessor<M>: IProcessor<M> {
     private var router: AbstractCommandRouter<M> = object: AbstractCommandRouter<M>() {
         override fun onQuitCommand(marker: M) {}
 
-        override fun route(command: AbstractRequestCommand<IEngine<M>, M>)
+        override fun route(command: AbstractRequestCommand<IEngine<M>, M>, marker: M)
                 = emptyList<AbstractResponseCommand<*>>()
 
         override fun start(engines: List<IEngine<M>>) {}
@@ -22,7 +21,7 @@ abstract class AbstractProcessor<M>: IProcessor<M> {
         }
     }
 
-    override fun processConnection() {
+    final override fun processConnection() {
         val markers = process()
         markers.forEach {marker ->
             val requests = receive(marker)
@@ -39,7 +38,7 @@ abstract class AbstractProcessor<M>: IProcessor<M> {
     protected abstract fun receive(marker: M): List<AbstractRequestCommand<IEngine<M>, M>>
     protected abstract fun send(command: List<AbstractResponseCommand<*>>, marker: M)
 
-    override fun start(router: AbstractCommandRouter<M>) {
+    final override fun start(router: AbstractCommandRouter<M>) {
         this.router = router
         start()
     }

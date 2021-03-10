@@ -1,11 +1,8 @@
-package com.inkostilation.pong.server.application
+package com.inkostilation.pong.server
 
-import com.inkostilation.pong.engine.IEngine
+import com.inkostilation.pong.server.engine.IEngine
 import com.inkostilation.pong.processing.IStateFul
-import com.inkostilation.pong.server.network.AbstractCommandRouter
-import com.inkostilation.pong.server.network.AbstractProcessor
-import com.inkostilation.pong.server.network.NetworkProcessor
-import com.inkostilation.pong.server.network.StandardCommandRouter
+import com.inkostilation.pong.server.network.*
 import java.nio.channels.SocketChannel
 import java.util.*
 import java.util.function.Consumer
@@ -14,11 +11,18 @@ class ServerApplication private constructor(){
     private val processors: MutableList<AbstractProcessor<SocketChannel>> = ArrayList()
     private var router: AbstractCommandRouter<SocketChannel>? = null
     private val engines: MutableList<IEngine<SocketChannel>> = ArrayList()
+    private lateinit var redirect: Redirect<SocketChannel>
+    private var defaultEngine: Class<out IEngine<SocketChannel>>? = null
     private var started = false
 
+
     fun start() {
-        router!!.start(engines)
+        redirect = Redirect(router!!)
+        router!!.start(engines, defaultEngine!!)
         processors.forEach { it.start(router!!) }
+        engines.forEach {
+            it.start(redirect)
+        }
         started = true
         loop()
     }
@@ -37,15 +41,16 @@ class ServerApplication private constructor(){
     }
 
     class Builder {
-        val serverApplication = ServerApplication()
+        private val serverApplication = ServerApplication()
 
-        fun build(): ServerApplication {
+        fun build(defaultEngine: Class<out IEngine<*>>): ServerApplication {
             if (serverApplication.router == null) {
                 serverApplication.router = StandardCommandRouter()
             }
             if (serverApplication.processors.size == 0) {
                 serverApplication.processors.add(NetworkProcessor("0.0.0.0", 8080))
             }
+            serverApplication.defaultEngine = defaultEngine as Class<out IEngine<SocketChannel>>
             return serverApplication
         }
 

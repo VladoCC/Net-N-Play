@@ -1,4 +1,4 @@
-package com.inkostilation.pong.server.application
+package com.inkostilation.pong.server
 
 object Time {
     private var lastTime = System.nanoTime()

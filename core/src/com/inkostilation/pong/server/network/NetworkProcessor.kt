@@ -2,7 +2,7 @@ package com.inkostilation.pong.server.network
 
 import com.inkostilation.pong.commands.AbstractRequestCommand
 import com.inkostilation.pong.commands.AbstractResponseCommand
-import com.inkostilation.pong.engine.IEngine
+import com.inkostilation.pong.server.engine.IEngine
 import com.inkostilation.pong.processing.NetworkListener
 import com.inkostilation.pong.processing.IStateFul.State
 import com.inkostilation.pong.processing.Serializer
@@ -40,6 +40,7 @@ class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor<Sock
     }
 
     override fun stop() {
+        serverSocket.close()
         state = State.STOPPED
     }
 

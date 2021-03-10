@@ -1,10 +1,9 @@
-package com.inkostilation.pong.desktop.network
+package com.inkostilation.pong.client
 
 import com.inkostilation.pong.commands.AbstractRequestCommand
 import com.inkostilation.pong.commands.AbstractResponseCommand
 import com.inkostilation.pong.commands.QuitCommand
-import com.inkostilation.pong.engine.IEngine
-import com.inkostilation.pong.engine.NullEngine
+import com.inkostilation.pong.server.engine.IEngine
 import com.inkostilation.pong.processing.IStateFul
 import com.inkostilation.pong.processing.NetworkListener
 import com.inkostilation.pong.processing.Serializer
@@ -15,7 +14,6 @@ import java.nio.channels.SocketChannel
 import java.util.*
 import kotlin.jvm.Throws
 import kotlinx.coroutines.*
-import kotlin.reflect.KClass
 
 class NetworkConnector<I>(private val receiver: I, private val host: String, private val port: Int): IConnector<I> {
     private lateinit var channel: SocketChannel

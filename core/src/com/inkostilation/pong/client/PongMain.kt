@@ -1,10 +1,9 @@
-package com.inkostilation.pong.desktop
+package com.inkostilation.pong.client
 
 import com.badlogic.gdx.Game
 import com.inkostilation.pong.commands.AbstractRequestCommand
 import com.inkostilation.pong.commands.request.RequestMessageCommand
-import com.inkostilation.pong.desktop.network.NetworkConnector
-import com.inkostilation.pong.engine.IEngine
+import com.inkostilation.pong.server.engine.IEngine
 
 class PongMain : Game() {
 
