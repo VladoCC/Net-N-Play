@@ -16,13 +16,15 @@ import java.nio.channels.SocketChannel
 import java.util.*
 import kotlin.jvm.Throws
 
-class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor<SocketChannel>() {
+class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor() {
 
     private var selector = Selector.open()
     private val serverSocket= ServerSocketChannel.open()
 
     private val serializer = Serializer()
     private val networkListener = NetworkListener()
+
+    private val socketMap = mutableMapOf<UUID, SocketChannel>()
 
     override var state = State.NOT_STARTED
         private set
@@ -39,19 +41,32 @@ class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor<Sock
         }
     }
 
+    override fun closeConnection(marker: UUID) {
+        val socketChannel = socketMap[marker]
+        socketChannel?.close()
+        socketMap.remove(marker)
+    }
+
     override fun stop() {
         serverSocket.close()
         state = State.STOPPED
     }
 
-    override fun process(): List<SocketChannel> {
+    override fun process(): List<UUID> {
         if (state == State.STARTED) {
             try {
                 selector!!.select(10)
                 val selectedKeys = selector!!.selectedKeys()
                 selectedKeys.filter { it.isAcceptable }
                         .forEach { register() }
-                return selectedKeys.filter { it.isReadable }.map { it.channel() as SocketChannel }
+                return selectedKeys.filter { it.isReadable }.map {
+                    var uuid = UUID.randomUUID()
+                    while (socketMap.containsKey(uuid)) {
+                        uuid = UUID.randomUUID()
+                    }
+                    socketMap[uuid] = it.channel() as SocketChannel
+                    return@map uuid
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -67,10 +82,10 @@ class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor<Sock
     }
 
     @Throws(IOException::class)
-    override fun receive(marker: SocketChannel): List<AbstractRequestCommand<IEngine<SocketChannel>, SocketChannel>> {
+    override fun receive(marker: UUID): List<AbstractRequestCommand<IEngine>> {
         val set: MutableSet<Class<*>> = HashSet()
-        return (serializer.deserialize(parseObjects(marker))
-                as List<AbstractRequestCommand<IEngine<SocketChannel>, SocketChannel>>)
+        return (serializer.deserialize(socketMap[marker]?.let { parseObjects(it) })
+                as List<AbstractRequestCommand<IEngine>>)
                 .filter { c ->
                     set.add(c::class.java)
                 }
@@ -81,8 +96,9 @@ class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor<Sock
         return networkListener.listen(channel)
     }
 
-    override fun send(commands: List<AbstractResponseCommand<*>>, channel: SocketChannel) {
-        if (channel.isConnected) {
+    override fun send(commands: List<AbstractResponseCommand<*>>, marker: UUID) {
+        val channel = socketMap[marker]
+        if (channel != null && channel.isConnected) {
             try {
                 val data = ByteBuffer.wrap(serializer.serialize(commands).toByteArray())
                 channel.write(data)

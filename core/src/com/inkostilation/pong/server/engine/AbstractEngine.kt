@@ -1,14 +1,23 @@
 package com.inkostilation.pong.server.engine
 
+import com.inkostilation.pong.commands.AbstractRequestCommand
+import com.inkostilation.pong.commands.AbstractResponseCommand
 import com.inkostilation.pong.server.network.Redirect
 
-abstract class AbstractEngine<M>: IEngine<M> {
-    private lateinit var redirect: Redirect<M>
-    final override fun start(redirect: Redirect<M>) {
-        this.redirect = redirect
+abstract class AbstractEngine: IEngine {
+    private var redirect = Redirect()
+
+    override fun getRedirect() = redirect
+
+    override fun process(command: AbstractRequestCommand<IEngine>): Array<AbstractResponseCommand<*>> {
+        redirect.reset()
+        prepare()
+        return command.execute(this)
     }
 
-    protected fun redirect() {
-        redirect.redirect()
+    abstract fun prepare()
+
+    final fun redirect(engine: Class<out IEngine>) {
+        redirect.redirect(engine)
     }
 }

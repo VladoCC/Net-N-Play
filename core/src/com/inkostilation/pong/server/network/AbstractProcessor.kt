@@ -4,21 +4,22 @@ import com.inkostilation.pong.commands.AbstractRequestCommand
 import com.inkostilation.pong.commands.AbstractResponseCommand
 import com.inkostilation.pong.server.engine.IEngine
 import com.inkostilation.pong.server.engine.NullEngine
+import java.util.*
 
-abstract class AbstractProcessor<M>: IProcessor<M> {
-    private var router: AbstractCommandRouter<M> = object: AbstractCommandRouter<M>() {
-        override fun onQuitCommand(marker: M) {}
+abstract class AbstractProcessor: IProcessor {
+    private var router: AbstractCommandRouter = object: AbstractCommandRouter() {
+        override fun onQuitCommand(marker: UUID, processor: IProcessor) {}
 
-        override fun route(command: AbstractRequestCommand<IEngine<M>, M>, marker: M)
+        override fun route(command: AbstractRequestCommand<IEngine>, marker: UUID)
                 = emptyList<AbstractResponseCommand<*>>()
 
-        override fun start(engines: List<IEngine<M>>) {}
+        override fun start(engines: List<IEngine>) {}
 
-        override fun getEngine(marker: M): IEngine<M> = NullEngine<M>()
+        override fun getEngine(marker: UUID): IEngine = NullEngine()
 
-        override fun reroute(marker: M, engine: Class<out IEngine<M>>): Boolean {
-            TODO("Not yet implemented")
-        }
+        override fun reroute(marker: UUID, engine: Class<out IEngine>) = true
+
+        override fun stop() {}
     }
 
     final override fun processConnection() {
@@ -28,17 +29,17 @@ abstract class AbstractProcessor<M>: IProcessor<M> {
 
             val responses = mutableListOf<AbstractResponseCommand<*>>()
             requests.forEach { command ->
-                responses.addAll(router.processCommand(command, marker))
+                responses.addAll(router.processCommand(command, marker, this))
             }
 
             send(responses, marker)
         }
     }
-    protected abstract fun process(): List<M>
-    protected abstract fun receive(marker: M): List<AbstractRequestCommand<IEngine<M>, M>>
-    protected abstract fun send(command: List<AbstractResponseCommand<*>>, marker: M)
+    protected abstract fun process(): List<UUID>
+    protected abstract fun receive(marker: UUID): List<AbstractRequestCommand<IEngine>>
+    protected abstract fun send(command: List<AbstractResponseCommand<*>>, marker: UUID)
 
-    final override fun start(router: AbstractCommandRouter<M>) {
+    final override fun start(router: AbstractCommandRouter) {
         this.router = router
         start()
     }

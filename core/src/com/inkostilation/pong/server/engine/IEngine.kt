@@ -1,9 +1,20 @@
 package com.inkostilation.pong.server.engine
 
+import com.inkostilation.pong.commands.AbstractRequestCommand
+import com.inkostilation.pong.commands.AbstractResponseCommand
 import com.inkostilation.pong.server.network.Redirect
+import java.util.*
 
-interface IEngine<M> {
-    fun start(redirect: Redirect<M>)
+interface IEngine {
+
+    fun start()
     fun act(delta: Float)
-    fun stop(marker: M)
+
+    fun enter(marker: UUID)
+    fun process(command: AbstractRequestCommand<IEngine>): Array<AbstractResponseCommand<*>>
+    fun quit(marker: UUID)
+
+    fun getRedirect(): Redirect
+
+    fun stop()
 }

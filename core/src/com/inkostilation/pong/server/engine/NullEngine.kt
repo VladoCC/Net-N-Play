@@ -2,12 +2,18 @@ package com.inkostilation.pong.server.engine
 
 import com.inkostilation.pong.server.network.Redirect
 import java.io.IOException
+import java.util.*
 
-class NullEngine<M>: IEngine<M> {
-    override fun start(redirect: Redirect<M>) {}
+class NullEngine: AbstractEngine() {
+    override fun prepare() {}
+
+    override fun start() {}
 
     override fun act(delta: Float) {}
+    override fun enter(marker: UUID) {}
+
+    override fun quit(marker: UUID) {}
 
     @Throws(IOException::class)
-    override fun stop(marker: M) {}
+    override fun stop() {}
 }

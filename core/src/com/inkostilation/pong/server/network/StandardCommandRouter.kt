@@ -6,18 +6,20 @@ import com.inkostilation.pong.commands.response.ResponseErrorCommand
 import com.inkostilation.pong.server.engine.IEngine
 import com.inkostilation.pong.exceptions.NoEngineException
 import java.io.IOException
-import java.nio.channels.SocketChannel
+import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.jvm.Throws
 
-class StandardCommandRouter(engines: List<IEngine<SocketChannel>> = ArrayList()) : AbstractCommandRouter<SocketChannel>() {
-    private lateinit var engines: Map<Class<out IEngine<SocketChannel>>, IEngine<SocketChannel>>
-    private lateinit var markedEngines: MutableMap<SocketChannel, Class<out IEngine<SocketChannel>>>
+class StandardCommandRouter(engines: List<IEngine> = ArrayList()) : AbstractCommandRouter() {
+    private lateinit var engines: Map<Class<out IEngine>, IEngine>
+    private lateinit var markedEngines: MutableMap<UUID, Class<out IEngine>>
+    private val redirect = Redirect()
 
     init {
         start(engines)
     }
 
-    override fun start(engines: List<IEngine<SocketChannel>>) {
+    override fun start(engines: List<IEngine>) {
         this.engines = engines.map {
                     e -> e::class.java to e
                 }
@@ -26,27 +28,37 @@ class StandardCommandRouter(engines: List<IEngine<SocketChannel>> = ArrayList())
     }
 
     @Throws(IOException::class, NoEngineException::class)
-    override fun route(command: AbstractRequestCommand<IEngine<SocketChannel>, SocketChannel>, marker: SocketChannel): List<AbstractResponseCommand<*>> {
-        val type = command.getEngineType() as Class<out IEngine<SocketChannel>>
-        if (markedEngines[marker] == type) {
+    override fun route(command: AbstractRequestCommand<IEngine>, marker: UUID): List<AbstractResponseCommand<*>> {
+        val type = command.getEngineType() as Class<out IEngine>
+        return if (markedEngines[marker] == type) {
             val engine = engines[type]
-            return command.execute(engine!!)
-                    .toList()
+            if (engine != null) {
+                val response = engine?.process(command)
+                        ?.toList()
+
+                val redirect = engine.getRedirect()
+                if (redirect.directed) {
+                    reroute(marker, redirect.direction!!)
+                }
+
+                response
+            }
+            emptyList()
         } else {
-            return listOf(ResponseErrorCommand("You don't have permission to interact with engine of class $type."))
+            listOf(ResponseErrorCommand("You don't have permission to interact with engine of class $type."))
         }
     }
 
-    override fun onQuitCommand(marker: SocketChannel) {
+    override fun onQuitCommand(marker: UUID, processor: IProcessor) {
         try {
-            getEngine(marker)!!.stop(marker)
-            marker.close()
+            getEngine(marker)!!.quit(marker)
+            processor.closeConnection(marker)
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
 
-    override fun getEngine(marker: SocketChannel): IEngine<SocketChannel>? {
+    override fun getEngine(marker: UUID): IEngine? {
         return if (markedEngines.containsKey(marker)) {
             engines[markedEngines[marker]]
         } else {
@@ -54,8 +66,13 @@ class StandardCommandRouter(engines: List<IEngine<SocketChannel>> = ArrayList())
         }
     }
 
-    override fun reroute(marker: SocketChannel, engine: Class<out IEngine<SocketChannel>>): Boolean {
+    override fun reroute(marker: UUID, engine: Class<out IEngine>): Boolean {
+        val last = markedEngines[marker]
+        if (last != null) {
+            engines[last]?.quit(marker)
+        }
         markedEngines[marker] = engine
+        engines[engine]?.enter(marker)
         return true
     }
 
