@@ -27,27 +27,7 @@ class StandardCommandRouter(engines: List<IEngine> = ArrayList()) : AbstractComm
         markedEngines = mutableMapOf()
     }
 
-    @Throws(IOException::class, NoEngineException::class)
-    override fun route(command: AbstractRequestCommand<IEngine>, marker: UUID): List<AbstractResponseCommand<*>> {
-        val type = command.getEngineType() as Class<out IEngine>
-        return if (markedEngines[marker] == type) {
-            val engine = engines[type]
-            if (engine != null) {
-                val response = engine?.process(command)
-                        ?.toList()
-
-                val redirect = engine.getRedirect()
-                if (redirect.directed) {
-                    reroute(marker, redirect.direction!!)
-                }
-
-                response
-            }
-            emptyList()
-        } else {
-            listOf(ResponseErrorCommand("You don't have permission to interact with engine of class $type."))
-        }
-    }
+    override fun canReroute(marker: UUID, direction: Class<out IEngine>) = engines[direction] != null
 
     override fun onQuitCommand(marker: UUID, processor: IProcessor) {
         try {
@@ -66,14 +46,9 @@ class StandardCommandRouter(engines: List<IEngine> = ArrayList()) : AbstractComm
         }
     }
 
-    override fun reroute(marker: UUID, engine: Class<out IEngine>): Boolean {
-        val last = markedEngines[marker]
-        if (last != null) {
-            engines[last]?.quit(marker)
-        }
+    override fun reroute(marker: UUID, engine: Class<out IEngine>): IEngine {
         markedEngines[marker] = engine
-        engines[engine]?.enter(marker)
-        return true
+        return engines[markedEngines[marker]]!!
     }
 
     override fun stop() {

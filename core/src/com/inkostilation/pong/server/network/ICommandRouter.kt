@@ -8,6 +8,6 @@ import java.util.*
 interface ICommandRouter {
     fun processCommand(command: AbstractRequestCommand<IEngine>, marker: UUID, processor: IProcessor): List<AbstractResponseCommand<*>>
     fun start(engines: List<IEngine>, defaultEngine: Class<out IEngine>)
-    fun reroute(marker: UUID, engine: Class<out IEngine>): Boolean
+    fun reroute(marker: UUID, engine: Class<out IEngine>): IEngine
     fun stop()
 }
