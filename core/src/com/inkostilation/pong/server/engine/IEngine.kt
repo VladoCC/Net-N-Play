@@ -11,7 +11,7 @@ interface IEngine {
     fun act(delta: Float)
 
     fun enter(marker: UUID)
-    fun process(command: AbstractRequestCommand<IEngine>): Array<AbstractResponseCommand<*>>
+    fun process(command: AbstractRequestCommand<AbstractEngine>): Array<AbstractResponseCommand<*>>
     fun quit(marker: UUID)
 
     fun getRedirect(): Redirect

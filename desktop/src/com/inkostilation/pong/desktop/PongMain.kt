@@ -1,8 +1,12 @@
-package com.inkostilation.pong.client
+package com.inkostilation.pong.desktop
 
 import com.badlogic.gdx.Game
+import com.inkostilation.pong.client.NetworkConnector
 import com.inkostilation.pong.commands.AbstractRequestCommand
+import com.inkostilation.pong.commands.request.CounterCommand
+import com.inkostilation.pong.commands.request.InitCommand
 import com.inkostilation.pong.commands.request.RequestMessageCommand
+import com.inkostilation.pong.server.engine.AbstractEngine
 import com.inkostilation.pong.server.engine.IEngine
 
 class PongMain : Game() {
@@ -12,8 +16,14 @@ class PongMain : Game() {
     override fun create() {
         networkConnector = NetworkConnector(this, "localhost", 8080)
         networkConnector.start()
-        val command = RequestMessageCommand<Void>("ping")
-        networkConnector.send(command as AbstractRequestCommand<IEngine<*>, *>)
+        val command = InitCommand()
+        networkConnector.send(command)
+
+        val counter = CounterCommand()
+        while (true) {
+            Thread.sleep(500)
+            networkConnector.send(counter)
+        }
     }
 
     override fun render() {

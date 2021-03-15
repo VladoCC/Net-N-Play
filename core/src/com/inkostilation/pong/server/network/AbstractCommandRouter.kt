@@ -5,23 +5,21 @@ import com.inkostilation.pong.commands.AbstractResponseCommand
 import com.inkostilation.pong.commands.QuitCommand
 import com.inkostilation.pong.commands.response.ResponseErrorCommand
 import com.inkostilation.pong.server.engine.IEngine
-import com.inkostilation.pong.exceptions.NoEngineException
-import com.inkostilation.pong.server.engine.NullEngine
-import java.io.IOException
+import com.inkostilation.pong.server.engine.AbstractEngine
 import java.util.*
 import kotlin.jvm.Throws
 
 abstract class AbstractCommandRouter: ICommandRouter {
-    private lateinit var defaultEngine: Class<out IEngine>
+    private lateinit var defaultEngine: Class<out AbstractEngine>
 
-    final override fun start(engines: List<IEngine>, defaultEngine: Class<out IEngine>) {
+    final override fun start(engines: List<AbstractEngine>, defaultEngine: Class<out AbstractEngine>) {
         this.defaultEngine = defaultEngine
         start(engines)
     }
 
-    protected abstract fun start(engines: List<IEngine>)
+    protected abstract fun start(engines: List<AbstractEngine>)
 
-    final override fun processCommand(command: AbstractRequestCommand<IEngine>, marker: UUID, processor: IProcessor): List<AbstractResponseCommand<*>> {
+    final override fun processCommand(command: AbstractRequestCommand<AbstractEngine>, marker: UUID, processor: IProcessor): List<AbstractResponseCommand<*>> {
         if (getEngine(marker) == null) {
             reroute(marker, defaultEngine)
         }
@@ -33,7 +31,7 @@ abstract class AbstractCommandRouter: ICommandRouter {
         }
     }
 
-    private final fun routeCommand(command: AbstractRequestCommand<IEngine>, marker: UUID): List<AbstractResponseCommand<*>> {
+    private final fun routeCommand(command: AbstractRequestCommand<AbstractEngine>, marker: UUID): List<AbstractResponseCommand<*>> {
         val engine = getEngine(marker)
         return if (engine != null && command.getEngineType() == engine::class.java) {
             val response = engine.process(command)
@@ -56,7 +54,7 @@ abstract class AbstractCommandRouter: ICommandRouter {
         }
     }
 
-    protected abstract fun canReroute(marker: UUID, direction: Class<out IEngine>): Boolean
+    protected abstract fun canReroute(marker: UUID, direction: Class<out AbstractEngine>): Boolean
 
     protected abstract fun onQuitCommand(marker: UUID, processor: IProcessor)
 

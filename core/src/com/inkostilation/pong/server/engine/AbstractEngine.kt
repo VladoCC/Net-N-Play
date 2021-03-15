@@ -9,7 +9,7 @@ abstract class AbstractEngine: IEngine {
 
     override fun getRedirect() = redirect
 
-    override fun process(command: AbstractRequestCommand<IEngine>): Array<AbstractResponseCommand<*>> {
+    override fun process(command: AbstractRequestCommand<AbstractEngine>): Array<AbstractResponseCommand<*>> {
         redirect.reset()
         prepare()
         return command.execute(this)
@@ -17,7 +17,7 @@ abstract class AbstractEngine: IEngine {
 
     abstract fun prepare()
 
-    final fun redirect(engine: Class<out IEngine>) {
+    final fun redirect(engine: Class<out AbstractEngine>) {
         redirect.redirect(engine)
     }
 }

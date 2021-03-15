@@ -4,14 +4,14 @@ import com.inkostilation.pong.commands.AbstractRequestCommand
 import com.inkostilation.pong.commands.AbstractResponseCommand
 import com.inkostilation.pong.server.engine.AbstractEngine
 import com.inkostilation.pong.server.engine.IEngine
-import com.inkostilation.pong.server.engine.NullEngine
+import com.inkostilation.pong.server.engine.MainEngine
+import com.inkostilation.pong.server.engine.StarterEngine
 
-class RequestMessageCommand(private val text: String): AbstractRequestCommand<AbstractEngine>() {
+class InitCommand: AbstractRequestCommand<AbstractEngine>() {
+    override fun getEngineType() = StarterEngine::class.java
+
     override fun execute(input: AbstractEngine): Array<AbstractResponseCommand<*>> {
-        println(text)
+        input.redirect(MainEngine::class.java)
         return emptyArray()
     }
-
-    override fun getEngineType() = NullEngine::class.java
-
 }

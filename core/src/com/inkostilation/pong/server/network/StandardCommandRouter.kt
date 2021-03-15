@@ -5,21 +5,22 @@ import com.inkostilation.pong.commands.AbstractResponseCommand
 import com.inkostilation.pong.commands.response.ResponseErrorCommand
 import com.inkostilation.pong.server.engine.IEngine
 import com.inkostilation.pong.exceptions.NoEngineException
+import com.inkostilation.pong.server.engine.AbstractEngine
 import java.io.IOException
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.jvm.Throws
 
-class StandardCommandRouter(engines: List<IEngine> = ArrayList()) : AbstractCommandRouter() {
-    private lateinit var engines: Map<Class<out IEngine>, IEngine>
-    private lateinit var markedEngines: MutableMap<UUID, Class<out IEngine>>
+class StandardCommandRouter(engines: List<AbstractEngine> = ArrayList(), val rerouteRule: (UUID, Class<out AbstractEngine>) -> Boolean = { _,_ -> true}) : AbstractCommandRouter() {
+    private lateinit var engines: Map<Class<out AbstractEngine>, AbstractEngine>
+    private lateinit var markedEngines: MutableMap<UUID, Class<out AbstractEngine>>
     private val redirect = Redirect()
 
     init {
         start(engines)
     }
 
-    override fun start(engines: List<IEngine>) {
+    override fun start(engines: List<AbstractEngine>) {
         this.engines = engines.map {
                     e -> e::class.java to e
                 }
@@ -27,7 +28,7 @@ class StandardCommandRouter(engines: List<IEngine> = ArrayList()) : AbstractComm
         markedEngines = mutableMapOf()
     }
 
-    override fun canReroute(marker: UUID, direction: Class<out IEngine>) = engines[direction] != null
+    override fun canReroute(marker: UUID, direction: Class<out AbstractEngine>) = rerouteRule(marker, direction)
 
     override fun onQuitCommand(marker: UUID, processor: IProcessor) {
         try {
@@ -46,7 +47,7 @@ class StandardCommandRouter(engines: List<IEngine> = ArrayList()) : AbstractComm
         }
     }
 
-    override fun reroute(marker: UUID, engine: Class<out IEngine>): IEngine {
+    override fun reroute(marker: UUID, engine: Class<out AbstractEngine>): AbstractEngine {
         markedEngines[marker] = engine
         return engines[markedEngines[marker]]!!
     }

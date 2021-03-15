@@ -4,7 +4,6 @@ import com.badlogic.gdx.backends.lwjgl.LwjglApplication
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration
 import com.inkostilation.pong.commands.response.ResponseErrorCommand
 import com.inkostilation.pong.commands.response.ResponseMessageCommand
-import com.inkostilation.pong.client.PongMain
 import com.inkostilation.pong.processing.Serializer
 
 object DesktopLauncher {

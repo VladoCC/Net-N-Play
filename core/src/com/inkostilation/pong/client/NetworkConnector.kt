@@ -7,6 +7,7 @@ import com.inkostilation.pong.server.engine.IEngine
 import com.inkostilation.pong.processing.IStateFul
 import com.inkostilation.pong.processing.NetworkListener
 import com.inkostilation.pong.processing.Serializer
+import com.inkostilation.pong.server.engine.AbstractEngine
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
@@ -18,7 +19,7 @@ import kotlinx.coroutines.*
 class NetworkConnector<I>(private val receiver: I, private val host: String, private val port: Int): IConnector<I> {
     private lateinit var channel: SocketChannel
     private val serializer = Serializer()
-    private val commandQueue = Collections.synchronizedList(ArrayList<AbstractRequestCommand<*, *>>())
+    private val commandQueue = Collections.synchronizedList(ArrayList<AbstractRequestCommand<*>>())
     private val networkListener = NetworkListener()
 
     private lateinit var senderThread: SenderThread
@@ -63,7 +64,7 @@ class NetworkConnector<I>(private val receiver: I, private val host: String, pri
         state = IStateFul.State.STOPPED
     }
 
-    override fun send(command: AbstractRequestCommand<IEngine<*>, *>) {
+    override fun send(command: AbstractRequestCommand<*>) {
         commandQueue.add(command)
     }
 
@@ -71,7 +72,7 @@ class NetworkConnector<I>(private val receiver: I, private val host: String, pri
     private fun sendQueuedCommmands() {
         // todo check for concurent modifications
         //val commands= commandQueue.toTypedArray()
-        val commands = commandQueue as List<AbstractRequestCommand<*, *>>
+        val commands = commandQueue as List<AbstractRequestCommand<AbstractEngine>>
         channel.write(ByteBuffer.wrap(serializer.serialize(commands).toByteArray()))
     }
 

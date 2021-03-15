@@ -1,11 +1,13 @@
 package com.inkostilation.pong.server.network
 
+import com.google.common.collect.BiMap
+import com.google.common.collect.HashBiMap
 import com.inkostilation.pong.commands.AbstractRequestCommand
 import com.inkostilation.pong.commands.AbstractResponseCommand
-import com.inkostilation.pong.server.engine.IEngine
-import com.inkostilation.pong.processing.NetworkListener
 import com.inkostilation.pong.processing.IStateFul.State
+import com.inkostilation.pong.processing.NetworkListener
 import com.inkostilation.pong.processing.Serializer
+import com.inkostilation.pong.server.engine.AbstractEngine
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
@@ -14,7 +16,6 @@ import java.nio.channels.Selector
 import java.nio.channels.ServerSocketChannel
 import java.nio.channels.SocketChannel
 import java.util.*
-import kotlin.jvm.Throws
 
 class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor() {
 
@@ -24,7 +25,7 @@ class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor() {
     private val serializer = Serializer()
     private val networkListener = NetworkListener()
 
-    private val socketMap = mutableMapOf<UUID, SocketChannel>()
+    private val socketMap = HashBiMap.create<UUID, SocketChannel>()
 
     override var state = State.NOT_STARTED
         private set
@@ -56,22 +57,44 @@ class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor() {
         if (state == State.STARTED) {
             try {
                 selector!!.select(10)
-                val selectedKeys = selector!!.selectedKeys()
-                selectedKeys.filter { it.isAcceptable }
-                        .forEach { register() }
-                return selectedKeys.filter { it.isReadable }.map {
-                    var uuid = UUID.randomUUID()
-                    while (socketMap.containsKey(uuid)) {
-                        uuid = UUID.randomUUID()
+                val selectedKeys = selector.selectedKeys()
+                val iter = selectedKeys.iterator()
+
+                val keyList = mutableListOf<SelectionKey>()
+
+                while (iter.hasNext()) {
+                    val key = iter.next()
+                    if (key.isAcceptable) {
+                        register()
                     }
-                    socketMap[uuid] = it.channel() as SocketChannel
-                    return@map uuid
+                    if (key.isReadable) {
+                        keyList.add(key)
+                    }
+                    iter.remove()
                 }
+                return processKeys(keyList)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
         return emptyList()
+    }
+
+    private fun processKeys(keys: List<SelectionKey>): List<UUID> {
+        return keys.map {
+            val channel = it.channel() as SocketChannel
+            var uuid: UUID
+            if (socketMap.containsValue(channel)) {
+                uuid = socketMap.inverse()[channel]?: UUID.randomUUID()
+            } else {
+                uuid = UUID.randomUUID()
+                while (socketMap.containsKey(uuid)) {
+                    uuid = UUID.randomUUID()
+                }
+            }
+            socketMap[uuid] = channel
+            return@map uuid
+        }
     }
 
     @Throws(IOException::class)
@@ -82,10 +105,10 @@ class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor() {
     }
 
     @Throws(IOException::class)
-    override fun receive(marker: UUID): List<AbstractRequestCommand<IEngine>> {
+    override fun receive(marker: UUID): List<AbstractRequestCommand<AbstractEngine>> {
         val set: MutableSet<Class<*>> = HashSet()
         return (serializer.deserialize(socketMap[marker]?.let { parseObjects(it) })
-                as List<AbstractRequestCommand<IEngine>>)
+                as List<AbstractRequestCommand<AbstractEngine>>)
                 .filter { c ->
                     set.add(c::class.java)
                 }
