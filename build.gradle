@@ -1,7 +1,6 @@
 buildscript {
     ext.kotlin_version = '1.4.31'
 
-
     repositories {
         mavenLocal()
         mavenCentral()
@@ -12,23 +11,26 @@ buildscript {
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-
-
     }
 }
+
 apply plugin: 'kotlin'
+apply plugin: "java-library"
+
+sourceCompatibility = 1.8
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+sourceSets.main.java.srcDirs = [ "src/" ]
+repositories {
+    mavenCentral()
+}
 
 allprojects {
     apply plugin: "eclipse"
 
     version = '1.0'
     ext {
-        appName = "Pong Online"
-        gdxVersion = '1.9.12'
-        roboVMVersion = '2.3.11'
-        box2DLightsVersion = '1.5'
-        ashleyVersion = '1.7.3'
-        aiVersion = '1.8.2'
+        appName = "NetNPlay"
     }
 
     repositories {
@@ -41,56 +43,18 @@ allprojects {
     }
 }
 
-project(":desktop") {
-    apply plugin: "java-library"
-
-
-    dependencies {
-        implementation project(":core")
-        api "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
-        api "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
-        api "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
-        
-    }
-}
-
-project(":server") {
-    apply plugin: "java-library"
-
-
-    dependencies {
-        implementation project(":core")
-        api "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
-        api "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
-        api "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
-
-    }
-}
-
-project(":core") {
-    apply plugin: "java-library"
-
-
-    dependencies {
-        api "com.badlogicgames.gdx:gdx:$gdxVersion"
-        api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
-        api "com.kotcrab.vis:vis-ui:1.4.8"
-        implementation 'com.google.code.gson:gson:2.8.6'
-        api 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2'
-        api group: 'com.google.collections', name: 'google-collections', version: '1.0-rc2'
-    }
-}
-repositories {
-    mavenCentral()
-}
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation group: 'com.google.collections', name: 'google-collections', version: '1.0-rc2'
 }
+
 compileKotlin {
     kotlinOptions {
         jvmTarget = "1.8"
     }
 }
+
 compileTestKotlin {
     kotlinOptions {
         jvmTarget = "1.8"
