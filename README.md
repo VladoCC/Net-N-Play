@@ -20,7 +20,7 @@ Idea behind it is simple: to serialize command that you want to send and it's cl
 * There is no way to call the command if it's not in the classpath on the receiving side of the network. This means that protecting system from attacks is as easy as creating specific commands that won't backfire on you.
 
 ### Download
-This project uses [Jitpack](jitpack.io) novel package repository technology of providing Git repositories as JVM libraries without dealing with all the difficulties of publishing. It helps to support fast update cycle and absolutely unintrusive for useres.
+This project uses [Jitpack](https://jitpack.io/) novel package repository technology of providing Git repositories as JVM libraries without dealing with all the difficulties of publishing. It helps to support fast update cycle and absolutely unintrusive for useres.
 
 Gradle:
 ```gradle
