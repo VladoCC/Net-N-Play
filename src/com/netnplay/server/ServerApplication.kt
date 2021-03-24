@@ -6,6 +6,10 @@ import com.netnplay.server.engine.AbstractEngine
 import com.netnplay.server.network.*
 import java.util.*
 
+
+/**
+ * Main class for a server
+ */
 class ServerApplication private constructor(){
     private val processors: MutableList<AbstractProcessor> = ArrayList()
     private var router: AbstractCommandRouter? = null
@@ -13,7 +17,6 @@ class ServerApplication private constructor(){
     private lateinit var redirect: Redirect
     private var defaultEngine: Class<out AbstractEngine>? = null
     private var started = false
-
 
     fun start() {
         router!!.start(engines, defaultEngine!!)

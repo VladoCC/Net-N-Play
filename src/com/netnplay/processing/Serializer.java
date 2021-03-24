@@ -17,6 +17,11 @@ public class Serializer {
         gson = builder.create();
     }
 
+    /**
+     *
+     * @param json
+     * @return
+     */
     public ICommand deserialize(String json) {
         try {
             Parcel parcel = gson.fromJson(json, Parcel.class);
