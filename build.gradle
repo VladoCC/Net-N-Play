@@ -19,7 +19,8 @@ plugins {
 }
 
 apply plugin: 'kotlin'
-apply plugin: "java-library"
+apply plugin: 'java-library'
+apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
 sourceCompatibility = 1.8
@@ -33,7 +34,7 @@ repositories {
 allprojects {
     apply plugin: "eclipse"
 
-    version = '1.0.1'
+    version = '1.1'
     ext {
         appName = "Net-N-Play"
     }
