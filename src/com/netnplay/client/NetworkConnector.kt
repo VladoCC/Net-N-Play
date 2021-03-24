@@ -69,7 +69,7 @@ class NetworkConnector<I>(private val executionContext: I, private val host: Str
     @Throws(IOException::class)
     private fun sendQueuedCommmands() {
         // creating new list to make sure that there is no concurrent modification problems
-        val commands = listOf(commandQueue) as List<AbstractRequestCommand<AbstractEngine>>
+        val commands = commandQueue.toList() as List<AbstractRequestCommand<*>>
         channel.write(ByteBuffer.wrap(serializer.serialize(commands).toByteArray()))
     }
 
