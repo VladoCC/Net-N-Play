@@ -29,7 +29,7 @@ Gradle:
         maven { url "https://jitpack.io" }
    }
    dependencies {
-         implementation 'com.github.vladocc:net-n-play:1.0'
+         implementation 'com.github.vladocc:net-n-play:1.1-bugfix'
    }
 ```
 
