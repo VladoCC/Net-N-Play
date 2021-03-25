@@ -34,7 +34,8 @@ Gradle:
 ```
 
 ### Documentation and examples
-**Coming soon!**   
+[Video explaning most of the details about this library](https://youtu.be/LAFXXTrIsrg)
+**More coming soon!**   
 At this point the project is fully functional and can be used in your project, but it's not really documented yet.
 
 ### How to use
