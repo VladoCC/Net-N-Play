@@ -16,6 +16,10 @@ import java.nio.channels.ServerSocketChannel
 import java.nio.channels.SocketChannel
 import java.util.*
 
+/**
+ * Processor intended for client-server interaction through TCP protocol,
+ * using [SocketChannel].
+ */
 class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor() {
 
     private var selector = Selector.open()

@@ -8,7 +8,12 @@ import java.util.*
 
 
 /**
- * Main class for a server
+ * Main class for a server.
+ * It lets you set up your applications, equip it with all the objects
+ * that it needs to correctly interact with clients.
+ *
+ * Call [start] method to run this application.
+ * This method is blocking.
  */
 class ServerApplication private constructor(){
     private val processors: MutableList<AbstractProcessor> = ArrayList()
@@ -18,6 +23,10 @@ class ServerApplication private constructor(){
     private var defaultEngine: Class<out AbstractEngine>? = null
     private var started = false
 
+    /**
+     * Blocking method that initializes and starts server.
+     * After that it will run this servers configuration.
+     */
     fun start() {
         router!!.start(engines, defaultEngine!!)
         processors.forEach { it.start(router!!) }
@@ -25,6 +34,11 @@ class ServerApplication private constructor(){
         loop()
     }
 
+    /**
+     * Main body of the server application.
+     * Method that loops through all of the processors, engines
+     * and runs received commands through router.
+     */
     private fun loop() {
         while (started) {
             processors.forEach { processor: AbstractProcessor ->
@@ -38,13 +52,22 @@ class ServerApplication private constructor(){
         }
     }
 
+    /**
+     * Builder pattern for server application that simplifies
+     * initialization of the applications by chaining methods for
+     * adding objects to the server.
+     */
     class Builder {
         private val serverApplication = ServerApplication()
 
+        /**
+         * Returns constructed [ServerApplication]. Also fills all of the
+         * empty fields with default values.
+         */
         fun build(defaultEngine: Class<out AbstractEngine>): ServerApplication {
             if (serverApplication.router == null) {
                 serverApplication.router = StandardCommandRouter(emptyList())
-                            { _,_ -> true}
+                            { _, _ -> true}
             }
             if (serverApplication.processors.size == 0) {
                 serverApplication.processors.add(NetworkProcessor("0.0.0.0", 8080))

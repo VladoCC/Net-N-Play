@@ -1,10 +1,12 @@
 package com.netnplay.commands
 
-import com.netnplay.commands.AbstractResponseCommand
-
-class ResponseErrorCommand(private val text: String) : AbstractResponseCommand<Any>() {
+/**
+ * Simple response command designed for testing purpose, which send [error] string to the client
+ * and prints it using error output stream.
+ */
+class ResponseErrorCommand(private val error: String) : AbstractResponseCommand<Any>() {
     override fun execute(input: Any) {
-        System.err.println("Server error: $text")
+        System.err.println("Server error: $error")
     }
 
 }

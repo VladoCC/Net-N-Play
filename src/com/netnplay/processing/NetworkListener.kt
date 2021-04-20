@@ -8,10 +8,19 @@ import java.nio.ByteBuffer
 import java.nio.channels.SocketChannel
 import java.util.*
 
+/**
+ * Class designed to receive data from opened [SocketChannel] and turning it
+ * from raw bytes to [List] of json objects.
+ */
 class NetworkListener(bufferSize: Int = 1024) {
     private val parser = MessageParser()
     private val buffer = ByteBuffer.allocate(bufferSize)
 
+    /**
+     * Main method of this class.
+     * Gets [channel], listens to it and tries to parse objects
+     * from received data if possible.
+     */
     @Throws(IOException::class)
     fun listen(channel: SocketChannel): List<String> {
         var objects: List<String> = ArrayList()

@@ -3,6 +3,10 @@ package com.netnplay.server.engine
 import java.io.IOException
 import java.util.*
 
+/**
+ * Simple Null objects realisation of the [IEngine] class that
+ * can be used in place of null to without unintended [NullPointerException] problems.
+ */
 class NullEngine: AbstractEngine() {
     override fun prepare() {}
 

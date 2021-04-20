@@ -6,7 +6,6 @@ import com.netnplay.commands.QuitCommand
 import com.netnplay.processing.IStateFul
 import com.netnplay.processing.NetworkListener
 import com.netnplay.processing.Serializer
-import com.netnplay.server.engine.AbstractEngine
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
@@ -14,6 +13,10 @@ import java.nio.channels.SocketChannel
 import java.util.*
 import kotlin.jvm.Throws
 
+/**
+ * Standard realisation of [IConnector] interface,
+ * built around [SocketChannel] and designed to be used for network intercations.
+ */
 class NetworkConnector<I>(private val executionContext: I, private val host: String, private val port: Int): IConnector<I> {
     private lateinit var channel: SocketChannel
     private val serializer = Serializer()
@@ -51,7 +54,7 @@ class NetworkConnector<I>(private val executionContext: I, private val host: Str
     override fun stop() {
         commandQueue.clear()
         commandQueue.add(QuitCommand())
-        sendQueuedCommmands()
+        sendQueuedCommands()
 
         senderThread.finish()
         receiverThread.finish()
@@ -66,13 +69,19 @@ class NetworkConnector<I>(private val executionContext: I, private val host: Str
         commandQueue.add(command)
     }
 
+    /**
+     * NetworkConnector sends commands in batches.
+     */
     @Throws(IOException::class)
-    private fun sendQueuedCommmands() {
+    private fun sendQueuedCommands() {
         // creating new list to make sure that there is no concurrent modification problems
         val commands = commandQueue.toList() as List<AbstractRequestCommand<*>>
         channel.write(ByteBuffer.wrap(serializer.serialize(commands).toByteArray()))
     }
 
+    /**
+     * Thread responsible for sending batched commands to the server
+     */
     private inner class SenderThread: Thread() {
         var work = true
             private set
@@ -82,7 +91,7 @@ class NetworkConnector<I>(private val executionContext: I, private val host: Str
         override fun run() {
             while (work) {
                 if (commandQueue.size > 0) {
-                    sendQueuedCommmands()
+                    sendQueuedCommands()
 
                     commandQueue.clear()
                 }
@@ -96,6 +105,11 @@ class NetworkConnector<I>(private val executionContext: I, private val host: Str
         }
     }
 
+    /**
+     * Thread responsible for receiving response commands from the server.
+     * It receives batch of commands and executes them.
+     * This thread is blocking.
+     */
     private inner class ReceiverThread: Thread() {
         var work = true
             private set

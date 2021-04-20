@@ -7,6 +7,17 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Custom serialization class that works with commands.
+ * This realization is capable of recreating ICommand or
+ * any subclass of it.
+ *
+ * This is the only Java class in this library.
+ * Gson can't correctly deserialize Kotlin classes without specifying
+ * concrete class, because of the way deserialization realized
+ * for generics inside of Gson, which is strongly tied to
+ * class structure of Java.
+ */
 public class Serializer {
 
     private static Gson gson;
@@ -18,9 +29,9 @@ public class Serializer {
     }
 
     /**
-     *
-     * @param json
-     * @return
+     * Method for deserializing json objects to commands, using Parcel structure.
+     * @param json stringified json object corresponding to command.
+     * @return command with the class specified in Parcel object.
      */
     public ICommand deserialize(String json) {
         try {
@@ -38,6 +49,13 @@ public class Serializer {
         return jsons.stream().map(j -> deserialize(j)).collect(Collectors.toList());
     }
 
+    /**
+     * Method that turns command into Parcel that makes a command
+     * fully reproducible without losing subclass details.
+     * @param command that needs to be serialized
+     * @return json object that can be deserialized into command of the same
+     * type as argument
+     */
     public String serialize(ICommand command) {
         return gson.toJson(new Parcel(command), Parcel.class);
     }
@@ -48,6 +66,10 @@ public class Serializer {
         return message.toString();
     }
 
+    /**
+     * Simple data class that contains qll the information about command
+     * that is important for serializing/deserializing it.
+     */
     private final class Parcel {
         String commandClass;
         ICommand command;
@@ -58,6 +80,10 @@ public class Serializer {
         }
     }
 
+    /**
+     * Custom deserializer that extracts command class first and then tries to deserialize
+     * supplied command as an object of the extracted class.
+     */
     private final class ParcelDeserializer implements JsonDeserializer<Parcel> {
 
         @Override
