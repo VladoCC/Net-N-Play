@@ -9,14 +9,9 @@ import kotlin.collections.ArrayList
 /**
  * Standard implementation of [ICommandRouter], that has all of the important functionality.
  */
-class StandardCommandRouter(engines: List<AbstractEngine> = ArrayList(), val rerouteRule: (UUID, Class<out AbstractEngine>) -> Boolean = { _,_ -> true}) : AbstractCommandRouter() {
+class StandardCommandRouter(val rerouteRule: (UUID, Class<out AbstractEngine>) -> Boolean = { _,_ -> true}) : AbstractCommandRouter() {
     private lateinit var engines: Map<Class<out AbstractEngine>, AbstractEngine>
     private lateinit var markedEngines: MutableMap<UUID, Class<out AbstractEngine>>
-    private val redirect = Redirect()
-
-    init {
-        start(engines)
-    }
 
     override fun start(engines: List<AbstractEngine>) {
         this.engines = engines.map {

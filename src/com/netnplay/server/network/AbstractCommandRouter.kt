@@ -75,7 +75,9 @@ abstract class AbstractCommandRouter: ICommandRouter {
      */
     private final fun redirection(marker: UUID, engine: IEngine) {
         val redirect = engine.getRedirect()
-        if (redirect.directed && canReroute(marker, redirect.direction!!)) {
+        if (getEngine(marker) == engine &&
+                redirect.directed &&
+                canReroute(marker, redirect.direction!!)) {
             engine.quit(marker)
             val goal = reroute(marker, engine.getRedirect().direction!!)
             goal.enter(marker)

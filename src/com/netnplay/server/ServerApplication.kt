@@ -42,7 +42,7 @@ class ServerApplication private constructor(){
     private fun loop() {
         while (started) {
             processors.forEach { processor: AbstractProcessor ->
-                if (processor.state == IStateFul.State.NOT_STARTED) {
+                if (processor.getState() == IStateFul.State.NOT_STARTED) {
                     processor.start(router!!)
                 }
                 processor.processConnection()
@@ -66,7 +66,7 @@ class ServerApplication private constructor(){
          */
         fun build(defaultEngine: Class<out AbstractEngine>): ServerApplication {
             if (serverApplication.router == null) {
-                serverApplication.router = StandardCommandRouter(emptyList())
+                serverApplication.router = StandardCommandRouter()
                             { _, _ -> true}
             }
             if (serverApplication.processors.size == 0) {

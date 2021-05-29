@@ -30,8 +30,9 @@ class NetworkProcessor(val host: String, val port: Int) : AbstractProcessor() {
 
     private val socketMap = HashBiMap.create<UUID, SocketChannel>()
 
-    override var state = State.NOT_STARTED
-        private set
+    private var state = State.NOT_STARTED
+
+    override fun getState() = state
 
     override fun start(){
         try {

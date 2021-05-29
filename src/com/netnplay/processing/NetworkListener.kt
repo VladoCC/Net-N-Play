@@ -40,7 +40,7 @@ class NetworkListener(bufferSize: Int = 1024) {
                 break
             }
             (buffer as Buffer).clear()
-            if (parser.isEmpty || parser.hasObjects()) {
+            if (parser.isEmpty || parser.hasObjects) {
                 try {
                     objects = parser.getAndClear()
                 } catch (e: ParsingNotFinishedException) {

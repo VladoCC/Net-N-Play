@@ -26,8 +26,9 @@ class NetworkConnector<I>(private val executionContext: I, private val host: Str
     private lateinit var senderThread: SenderThread
     private lateinit var receiverThread: ReceiverThread
 
-    override var state: IStateFul.State = IStateFul.State.NOT_STARTED
-        private set
+    private var state = IStateFul.State.NOT_STARTED
+
+    override fun getState() = state
 
     override fun start() {
         try {

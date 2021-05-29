@@ -55,7 +55,7 @@ abstract class AbstractProcessor: IProcessor {
     /**
      * Sends list [command] to the client corresponding to [marker].
      */
-    protected abstract fun send(command: List<AbstractResponseCommand<*>>, marker: UUID)
+    protected abstract fun send(commands: List<AbstractResponseCommand<*>>, marker: UUID)
 
     /**
      * Initializes router and then calls [start].

@@ -11,5 +11,5 @@ interface IStateFul {
     enum class State {
         NOT_STARTED, STOPPED, STARTED, ERROR
     }
-    val state: State
+    fun getState(): State
 }

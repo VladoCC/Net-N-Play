@@ -1,6 +1,7 @@
 package com.netnplay.processing
 
 import com.netnplay.exceptions.EmptyParcelException
+import com.netnplay.exceptions.IncorrectJsonException
 import com.netnplay.exceptions.ParsingNotFinishedException
 import java.nio.ByteBuffer
 import java.util.*
@@ -34,6 +35,8 @@ class MessageParser {
      * incoming data earlier.
      */
     private var counter = -1
+    private var parcelStart = -1
+    private var parcelEnd = - 1
 
     /**
      * Builder intended for concatenating received strings.
@@ -46,6 +49,8 @@ class MessageParser {
     fun newMessage() {
         clear()
         counter = -1
+        parcelStart = -1
+        parcelEnd = -1
     }
 
     /**
@@ -56,9 +61,9 @@ class MessageParser {
      * with json objects from incoming buffers and there is no
      * unfinished objects in the last buffer.
      */
-    fun hasObjects(): Boolean {
-        return counter == 0
-    }
+    val hasObjects: Boolean
+        get() = counter == 0
+
 
     /**
      * Returns true if there is no incoming buffers or they had no brackets
@@ -80,14 +85,13 @@ class MessageParser {
      */
     @Throws(ParsingNotFinishedException::class)
     fun getAndClear(): List<String> {
-        if (!hasObjects() && !isEmpty) {
+        if (!hasObjects && !isEmpty) {
             throw ParsingNotFinishedException()
         }
         val parcel = builder.toString()
 
-        val result = objects.stream()
-                .map<String> { p: Position -> return@map parcel.substring(p.start, p.end) }
-                .collect(Collectors.toList())
+        val result = objects.map { p: Position -> return@map parcel.substring(p.start, p.end) }
+
         clear()
         return result
     }
@@ -95,7 +99,7 @@ class MessageParser {
     /**
      * Method for clearing buffers and getting rid of parsers internal data.
      */
-    fun clear() {
+    private fun clear() {
         objects.clear()
         builder.clear()
     }
@@ -108,11 +112,10 @@ class MessageParser {
     fun addParcel(parcel: ByteBuffer) {
         val pos = parcel.position()
         val newParcel = String(parcel.array()).substring(0, pos)
-        if (newParcel.length == 0) {
+        if (newParcel.isEmpty()) {
             throw EmptyParcelException()
         }
-        builder.append(newParcel)
-        processParcel()
+        processParcel(newParcel)
     }
 
     /**
@@ -122,28 +125,40 @@ class MessageParser {
      * The algorithm behind it based on searching for opening and closing brackets
      * to decide whether we are inside of the json or just got out of it.
      */
-    private fun processParcel() {
-        var counter = 0
-        var parcelStart = -1
-        var parcelEnd: Int
-        val parcel = builder.toString()
-        for (i in 0 until parcel.length) {
-            val elem = parcel[i]
+    private fun processParcel(nextPart: String) {
+        val start = builder.length
+        for (i in nextPart.indices) {
+            val elem = nextPart[i]
             if (elem == '{') {
-                if (counter == 0) {
-                    parcelStart = i
-                }
-                counter++
+                openBracket(start + i)
+            } else if (elem == '}') {
+                closeBracket(start + i)
             }
-            if (elem == '}' && counter > 0) { //check counter to see if we are inside json or not
-                counter--
-                if (counter == 0) {
-                    parcelEnd = i
-                    objects.add(Position(parcelStart, parcelEnd + 1))
-                }
+            if (counter < 0) {
+                throw IncorrectJsonException()
             }
         }
-        this.counter = counter
+        builder.append(nextPart)
+    }
+
+    private fun openBracket(pos: Int) {
+        if (counter == 0) {
+            parcelStart = pos
+        }
+        counter++
+    }
+
+    private fun closeBracket(pos: Int) {
+        counter--
+        if (counter == 0) {
+            if (parcelStart > objects.last().start) { // make sure that it's a new start index to the list
+                parcelEnd = pos
+                objects.add(Position(parcelStart, parcelEnd + 1))
+            }
+            throw IncorrectJsonException()
+        } else if (counter < 0) {
+            throw IncorrectJsonException()
+        }
     }
 
     private data class Position(val start: Int, val end: Int)
