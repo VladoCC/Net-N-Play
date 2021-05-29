@@ -154,8 +154,9 @@ class MessageParser {
             if (objects.size == 0 || parcelStart > objects.last().start) { // make sure that it's a new start index to the list
                 parcelEnd = pos
                 objects.add(Position(parcelStart, parcelEnd + 1))
+            } else {
+                throw IncorrectJsonException()
             }
-            throw IncorrectJsonException()
         } else if (counter < 0) {
             throw IncorrectJsonException()
         }
