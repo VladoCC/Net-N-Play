@@ -151,7 +151,7 @@ class MessageParser {
     private fun closeBracket(pos: Int) {
         counter--
         if (counter == 0) {
-            if (objects.size > 0 && parcelStart > objects.last().start) { // make sure that it's a new start index to the list
+            if (objects.size == 0 || parcelStart > objects.last().start) { // make sure that it's a new start index to the list
                 parcelEnd = pos
                 objects.add(Position(parcelStart, parcelEnd + 1))
             }

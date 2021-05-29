@@ -34,7 +34,7 @@ repositories {
 allprojects {
     apply plugin: "eclipse"
 
-    version = '1.2.3'
+    version = '1.2.4'
     ext {
         appName = "Net-N-Play"
     }
