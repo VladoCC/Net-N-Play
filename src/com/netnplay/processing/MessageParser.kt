@@ -134,14 +134,15 @@ class MessageParser {
             } else if (elem == '}') {
                 closeBracket(start + i)
             }
-            if (counter < 0) {
-                throw IncorrectJsonException()
-            }
         }
         builder.append(nextPart)
     }
 
     private fun openBracket(pos: Int) {
+        if (counter == -1) {
+            counter = 0
+        }
+        
         if (counter == 0) {
             parcelStart = pos
         }
