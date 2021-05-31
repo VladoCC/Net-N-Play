@@ -142,7 +142,7 @@ class MessageParser {
         if (counter == -1) {
             counter = 0
         }
-        
+
         if (counter == 0) {
             parcelStart = pos
         }

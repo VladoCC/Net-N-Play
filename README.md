@@ -1,5 +1,4 @@
 # Net-N-Play
-[![Release](https://jitpack.io/v/vladocc/net-n-play.svg)](https://jitpack.io/vladocc/net-n-play)   
 [![forthebadge](https://forthebadge.com/images/badges/made-with-java.svg)](https://forthebadge.com) [![forthebadge](https://forthebadge.com/images/badges/built-with-love.svg)](https://forthebadge.com) [![forthebadge](https://forthebadge.com/images/badges/powered-by-black-magic.svg)](https://forthebadge.com)   
 Net'n'Play is high-level general-purpose networking library for JVM written in Kotlin (with a bit of Java). With the main focus around the idea of Plug'n'Play-like experience, while keeping everything fool- and attack- proof.   
 
@@ -29,7 +28,7 @@ Gradle:
         maven { url "https://jitpack.io" }
    }
    dependencies {
-         implementation 'com.github.vladocc:net-n-play:1.2.2-fix'
+         implementation 'com.github.vladocc:net-n-play:1.3'
    }
 ```
 
